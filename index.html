@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Advanced Quiz System</title>
+
+<style>
+body {
+    font-family: Arial;
+    background: #0f172a;
+    color: white;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+.container {
+    width: 800px;
+    display: flex;
+    gap: 20px;
+}
+
+.quiz-box {
+    flex: 3;
+    background: #1e293b;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.palette {
+    flex: 1;
+    background: #1e293b;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.palette button {
+    width: 40px;
+    height: 40px;
+    margin: 5px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.answered {
+    background: #22c55e;
+}
+
+.not-answered {
+    background: #334155;
+}
+
+.current {
+    border: 2px solid yellow;
+}
+
+.option {
+    background: #334155;
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.option:hover {
+    background: #475569;
+}
+
+.selected {
+    background: #22c55e;
+}
+
+.btn {
+    margin-top: 10px;
+    padding: 10px;
+    background: #3b82f6;
+    border: none;
+    color: white;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.progress {
+    height: 10px;
+    background: #334155;
+    margin-bottom: 10px;
+    border-radius: 5px;
+}
+
+.progress-bar {
+    height: 100%;
+    background: #22c55e;
+    width: 0%;
+    border-radius: 5px;
+}
+
+#timer {
+    float: right;
+    color: #facc15;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="quiz-box">
+    <div class="progress"><div class="progress-bar" id="progress"></div></div>
+    <div id="timer">Time: 15</div>
+    <h2 id="question"></h2>
+    <div id="options"></div>
+
+    <button class="btn" onclick="prevQuestion()">Previous</button>
+    <button class="btn" onclick="nextQuestion()">Next</button>
+</div>
+
+<div class="palette" id="palette"></div>
+
+</div>
+
+<script>
+const quiz = [
+    {q:"HTML stands for?", o:["Hyper Tool","Hyper Text Markup Language","High Text","None"], a:1},
+    {q:"CSS used for?", o:["Structure","Styling","Database","Logic"], a:1},
+    {q:"JS is?", o:["Language","Library","Framework","Tool"], a:0},
+    {q:"Which is backend?", o:["HTML","CSS","Node.js","Bootstrap"], a:2},
+    {q:"Database example?", o:["MySQL","HTML","CSS","JS"], a:0}
+];
+
+let current = 0;
+let answers = new Array(quiz.length).fill(null);
+let time = 15;
+let timer;
+
+function loadQuestion() {
+    clearInterval(timer);
+    time = 15;
+    startTimer();
+
+    document.getElementById("question").innerText = quiz[current].q;
+
+    let optDiv = document.getElementById("options");
+    optDiv.innerHTML = "";
+
+    quiz[current].o.forEach((opt, i) => {
+        let div = document.createElement("div");
+        div.className = "option";
+        if (answers[current] === i) div.classList.add("selected");
+
+        div.innerText = opt;
+        div.onclick = () => {
+            answers[current] = i;
+            loadQuestion();
+            updatePalette();
+        };
+        optDiv.appendChild(div);
+    });
+
+    updateProgress();
+    updatePalette();
+}
+
+function nextQuestion() {
+    if (current < quiz.length - 1) {
+        current++;
+        loadQuestion();
+    } else {
+        showResult();
+    }
+}
+
+function prevQuestion() {
+    if (current > 0) {
+        current--;
+        loadQuestion();
+    }
+}
+
+function updateProgress() {
+    let percent = ((current + 1) / quiz.length) * 100;
+    document.getElementById("progress").style.width = percent + "%";
+}
+
+function startTimer() {
+    document.getElementById("timer").innerText = "Time: " + time;
+
+    timer = setInterval(() => {
+        time--;
+        document.getElementById("timer").innerText = "Time: " + time;
+
+        if (time <= 0) {
+            nextQuestion();
+        }
+    }, 1000);
+}
+
+function updatePalette() {
+    let pal = document.getElementById("palette");
+    pal.innerHTML = "";
+
+    quiz.forEach((_, i) => {
+        let btn = document.createElement("button");
+
+        btn.className = answers[i] !== null ? "answered" : "not-answered";
+        if (i === current) btn.classList.add("current");
+
+        btn.innerText = i + 1;
+        btn.onclick = () => {
+            current = i;
+            loadQuestion();
+        };
+
+        pal.appendChild(btn);
+    });
+}
+
+function showResult() {
+    clearInterval(timer);
+
+    let score = 0;
+    quiz.forEach((q, i) => {
+        if (answers[i] === q.a) score++;
+    });
+
+    let percent = ((score / quiz.length) * 100).toFixed(2);
+
+    document.body.innerHTML = `
+        <div style="text-align:center; margin-top:50px;">
+            <h1>Quiz Finished 🎉</h1>
+            <h2>Score: ${score}/${quiz.length}</h2>
+            <h2>Percentage: ${percent}%</h2>
+            <button onclick="location.reload()" class="btn">Restart</button>
+        </div>
+    `;
+}
+
+loadQuestion();
+</script>
+
+</body>
+</html>
