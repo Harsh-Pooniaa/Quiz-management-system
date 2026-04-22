@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Management System</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#0f172a;color:#fff}.app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}.sidebar{background:#111827;padding:20px}.brand{font-size:24px;font-weight:700;margin-bottom:20px}.menu button{width:100%;padding:12px;margin:8px 0;border:0;border-radius:10px;background:#1f2937;color:#fff;cursor:pointer}.menu button:hover,.menu button.active{background:#2563eb}.main{padding:24px}.card{background:#1e293b;padding:20px;border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,.2);margin-bottom:20px}.row{display:grid;grid-template-columns:1fr 1fr;gap:15px}.input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#fff}.btn{padding:10px 16px;border:0;border-radius:10px;background:#2563eb;color:#fff;cursor:pointer}.btn.secondary{background:#475569}.btn.danger{background:#dc2626}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.stat{background:#0f172a;padding:16px;border-radius:14px}.question{padding:12px;background:#0f172a;border-radius:12px;margin:10px 0}.hidden{display:none}.option{padding:10px;background:#334155;border-radius:10px;margin:8px 0;cursor:pointer}.option:hover{background:#475569}.selected{background:#16a34a}.top{display:flex;justify-content:space-between;align-items:center;gap:10px}.small{font-size:13px;color:#cbd5e1}table{width:100%;border-collapse:collapse}td,th{padding:10px;border-bottom:1px solid #334155;text-align:left}@media(max-width:900px){.app{grid-template-columns:1fr}.sidebar{position:sticky;top:0}.row,.stats{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class='app'>
+<div class='sidebar'>
+<div class='brand'>Quiz Admin</div>
+<div class='menu'>
+<button class='active' onclick='showPage("dashboard",this)'>Dashboard</button>
+<button onclick='showPage("addQuiz",this)'>Add Quiz</button>
+<button onclick='showPage("manage",this)'>Manage Quiz</button>
+<button onclick='showPage("take",this)'>Take Quiz</button>
+</div>
+</div>
+<div class='main'>
+<div id='dashboard' class='page'>
+<div class='stats'>
+<div class='stat'><h3 id='quizCount'>0</h3><div class='small'>Total Quizzes</div></div>
+<div class='stat'><h3 id='attemptCount'>0</h3><div class='small'>Attempts</div></div>
+<div class='stat'><h3 id='avgScore'>0%</h3><div class='small'>Average Score</div></div>
+</div>
+<div class='card'><h2>Welcome</h2><p>Create quizzes, manage questions, and attempt tests from one interface.</p></div>
+</div>
+<div id='addQuiz' class='page hidden'>
+<div class='card'>
+<h2>Create New Quiz</h2>
+<div class='row'>
+<input id='quizTitle' class='input' placeholder='Quiz Title'>
+<input id='quizTime' class='input' type='number' placeholder='Time in Minutes'>
+</div><br>
+<input id='qText' class='input' placeholder='Question'><br><br>
+<div class='row'>
+<input id='o1' class='input' placeholder='Option 1'>
+<input id='o2' class='input' placeholder='Option 2'>
+<input id='o3' class='input' placeholder='Option 3'>
+<input id='o4' class='input' placeholder='Option 4'>
+</div><br>
+<select id='correct' class='input'><option value='0'>Correct Option 1</option><option value='1'>Correct Option 2</option><option value='2'>Correct Option 3</option><option value='3'>Correct Option 4</option></select><br><br>
+<button class='btn secondary' onclick='addQuestion()'>Add Question</button>
+<button class='btn' onclick='saveQuiz()'>Save Quiz</button>
+<div id='draftList'></div>
+</div>
+</div>
+<div id='manage' class='page hidden'>
+<div class='card'><h2>Manage Quizzes</h2><table><thead><tr><th>Title</th><th>Questions</th><th>Action</th></tr></thead><tbody id='manageBody'></tbody></table></div>
+</div>
+<div id='take' class='page hidden'>
+<div class='card'>
+<div class='top'><h2>Take Quiz</h2><select id='quizSelect' class='input' style='max-width:260px'></select><button class='btn' onclick='startQuiz()'>Start</button></div>
+<div id='quizArea'></div>
+</div>
+</div>
+</div></div>
+<script>
+let quizzes=JSON.parse(localStorage.getItem('quizzes')||'[]');
+let attempts=JSON.parse(localStorage.getItem('attempts')||'[]');
+let draft=[];let currentQuiz,currentIndex=0,answers=[];
+function saveStore(){localStorage.setItem('quizzes',JSON.stringify(quizzes));localStorage.setItem('attempts',JSON.stringify(attempts));renderAll();}
+function showPage(id,el){document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');document.querySelectorAll('.menu button').forEach(b=>b.classList.remove('active'));if(el)el.classList.add('active');renderAll();}
+function addQuestion(){let q=qText.value.trim();if(!q)return alert('Enter question');draft.push({q,options:[o1.value,o2.value,o3.value,o4.value],a:+correct.value});draftList.innerHTML='<h3>Draft Questions</h3>'+draft.map((x,i)=>'<div class=question>'+(i+1)+'. '+x.q+'</div>').join('');qText.value=o1.value=o2.value=o3.value=o4.value='';}
+function saveQuiz(){if(!quizTitle.value||draft.length===0)return alert('Add title and questions');quizzes.push({title:quizTitle.value,time:+quizTime.value||5,questions:draft});draft=[];draftList.innerHTML='';quizTitle.value='';quizTime.value='';saveStore();alert('Quiz Saved');}
+function renderAll(){quizCount.innerText=quizzes.length;attemptCount.innerText=attempts.length;avgScore.innerText=attempts.length?Math.round(attempts.reduce((a,b)=>a+b.percent,0)/attempts.length)+'%':'0%';manageBody.innerHTML=quizzes.map((q,i)=>`<tr><td>${q.title}</td><td>${q.questions.length}</td><td><button class='btn danger' onclick='delQuiz(${i})'>Delete</button></td></tr>`).join('');quizSelect.innerHTML=quizzes.map((q,i)=>`<option value='${i}'>${q.title}</option>`).join('');}
+function delQuiz(i){quizzes.splice(i,1);saveStore();}
+function startQuiz(){if(!quizzes.length)return;currentQuiz=quizzes[quizSelect.value];currentIndex=0;answers=new Array(currentQuiz.questions.length).fill(null);renderQuestion();}
+function renderQuestion(){let item=currentQuiz.questions[currentIndex];quizArea.innerHTML=`<div class='small'>Question ${currentIndex+1}/${currentQuiz.questions.length}</div><h3>${item.q}</h3>`+item.options.map((op,i)=>`<div class='option ${answers[currentIndex]===i?'selected':''}' onclick='pick(${i})'>${op}</div>`).join('')+`<br><button class='btn secondary' onclick='prevQ()'>Previous</button> <button class='btn' onclick='nextQ()'>${currentIndex===currentQuiz.questions.length-1?'Submit':'Next'}</button>`;}
+function pick(i){answers[currentIndex]=i;renderQuestion();}
+function prevQ(){if(currentIndex>0){currentIndex--;renderQuestion();}}
+function nextQ(){if(currentIndex<currentQuiz.questions.length-1){currentIndex++;renderQuestion();}else finishQuiz();}
+function finishQuiz(){let score=0;currentQuiz.questions.forEach((q,i)=>{if(answers[i]===q.a)score++;});let percent=Math.round(score/currentQuiz.questions.length*100);attempts.push({quiz:currentQuiz.title,percent});saveStore();quizArea.innerHTML=`<h2>Result</h2><p>Score: ${score}/${currentQuiz.questions.length}</p><p>Percentage: ${percent}%</p>`;}
+renderAll();
+</script>
+</body>
+</html>
