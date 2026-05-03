@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProQuiz | Analytics & Default Sets</title>
+    <style>
+        :root {
+            --primary: #6366f1; --primary-dark: #4f46e5;
+            --secondary: #475569; --success: #22c55e;
+            --danger: #ef4444; --bg: #f1f5f9; --white: #ffffff;
+        }
+
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--secondary); margin: 0; padding: 10px; display: flex; justify-content: center; }
+        
+        .container { width: 100%; max-width: 1000px; }
+        .card { background: var(--white); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .hidden { display: none !important; }
+        
+        /* Typography */
+        h1, h2, h3 { margin-top: 0; color: #1e293b; }
+
+        /* Responsive Table */
+        .table-wrapper { overflow-x: auto; margin-top: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f8fafc; color: #64748b; font-size: 0.85rem; text-transform: uppercase; }
+
+        /* Form Elements */
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #e2e8f0; border-radius: 8px; outline: none; }
+        button { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; white-space: nowrap; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-outline { background: transparent; border: 1px solid #cbd5e1; }
+
+        /* Layout Helpers */
+        .flex-row { display: flex; gap: 10px; align-items: center; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+
+        /* Admin Management */
+        .quiz-item { border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px; margin-bottom: 15px; background: #fff; }
+        .q-row { background: #f8fafc; padding: 10px; border-radius: 6px; margin-top: 8px; display: flex; justify-content: space-between; font-size: 0.9rem; border-left: 3px solid var(--primary); }
+
+        /* Quiz Experience */
+        .option-btn { 
+            display: block; width: 100%; text-align: left; padding: 15px; margin: 10px 0; 
+            border: 2px solid #e2e8f0; border-radius: 10px; background: white; font-size: 1rem; cursor: pointer;
+        }
+        .correct { background: #dcfce7 !important; border-color: var(--success) !important; color: #166534; }
+        .wrong { background: #fee2e2 !important; border-color: var(--danger) !important; color: #991b1b; }
+
+        /* Responsive Adjustments */
+        @media (max-width: 600px) {
+            .flex-row { flex-direction: column; }
+            button { width: 100%; }
+            .card { padding: 15px; }
+            nav h2 { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- LOGIN VIEW -->
+    <div id="login-view" class="card" style="max-width: 400px; margin: 40px auto; text-align: center;">
+        <h2>🧠 ProQuiz System</h2>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <div class="flex-row">
+            <button class="btn-primary" onclick="login('admin')">Admin Login</button>
+            <button class="btn-success" onclick="login('student')">Student Login</button>
+        </div>
+        <p style="font-size: 0.8rem; color: #64748b; margin-top: 15px;">Admin: <b>admin/admin123</b><br>Student: <b>student/pass123</b></p>
+    </div>
+
+    <!-- MAIN DASHBOARD -->
+    <div id="main-view" class="hidden">
+        <nav class="flex-between" style="border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 20px;">
+            <h2 id="role-title">Dashboard</h2>
+            <div class="flex-row">
+                <button class="btn-danger" onclick="resetApp()">Full Reset</button>
+                <button class="btn-outline" onclick="location.reload()">Logout</button>
+            </div>
+        </nav>
+
+        <!-- ADMIN PANEL -->
+        <div id="admin-panel" class="hidden">
+            <div class="card">
+                <h3>📊 All Student Performance</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Quiz Name</th>
+                                <th>Score</th>
+                                <th>Percentage</th>
+                                <th>Date/Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="performance-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>➕ Create New Quiz</h3>
+                <div class="flex-row">
+                    <input type="text" id="new-quiz-title" placeholder="Quiz Title...">
+                    <button class="btn-primary" onclick="addQuiz()">Add Quiz</button>
+                </div>
+            </div>
+
+            <div id="admin-quiz-list"></div>
+        </div>
+
+        <!-- STUDENT PANEL -->
+        <div id="student-panel" class="hidden">
+            <div id="student-quiz-list"></div>
+            
+            <div id="quiz-arena" class="hidden card">
+                <div class="flex-between">
+                    <span id="q-count"></span>
+                    <span id="live-score" style="color: var(--primary); font-weight: bold;"></span>
+                </div>
+                <h3 id="q-text" style="margin: 20px 0;"></h3>
+                <div id="options-container"></div>
+                <div id="feedback" style="text-align: center; font-weight: bold; height: 25px; margin-top: 10px;"></div>
+            </div>
+
+            <div id="quiz-result" class="hidden card" style="text-align: center;">
+                <h2>Quiz Complete!</h2>
+                <div id="final-stats" style="font-size: 2.5rem; margin: 20px 0; color: var(--primary);"></div>
+                <button class="btn-primary" onclick="showStudentDashboard()">View More Quizzes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Adding Questions -->
+<div id="modal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 15px;">
+    <div class="card" style="width: 100%; max-width: 500px;">
+        <h3>Add Question</h3>
+        <input type="hidden" id="modal-quiz-id">
+        <input type="text" id="m-text" placeholder="Question Text">
+        <input type="text" id="m-opts" placeholder="Options (comma separated)" oninput="syncAnsDropdown()">
+        <label style="font-size: 0.8rem; font-weight: bold; margin-top: 10px; display: block;">Select Correct Answer:</label>
+        <select id="m-ans"></select>
+        <div class="flex-row" style="margin-top: 20px;">
+            <button class="btn-outline" onclick="closeModal()">Cancel</button>
+            <button class="btn-primary" onclick="saveQuestion()">Save Question</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- DEFAULT DATA (5 Questions Each) ---
+    const defaultQuizzes = [
+        { 
+            id: 1, title: "General Knowledge", questions: [
+                { id: 101, text: "What is the capital of France?", options: ["Berlin", "Madrid", "Paris", "Rome"], answer: "Paris" },
+                { id: 102, text: "Which ocean is the largest?", options: ["Atlantic", "Indian", "Arctic", "Pacific"], answer: "Pacific" },
+                { id: 103, text: "Who painted the Mona Lisa?", options: ["Van Gogh", "Da Vinci", "Picasso", "Monet"], answer: "Da Vinci" },
+                { id: 104, text: "How many continents are there?", options: ["5", "6", "7", "8"], answer: "7" },
+                { id: 105, text: "Which planet is known as the Red Planet?", options: ["Mars", "Venus", "Jupiter", "Saturn"], answer: "Mars" }
+            ] 
+        },
+        { 
+            id: 2, title: "Science & Nature", questions: [
+                { id: 201, text: "What is the chemical symbol for water?", options: ["CO2", "O2", "H2O", "HO2"], answer: "H2O" },
+                { id: 202, text: "What gas do plants absorb from the atmosphere?", options: ["Oxygen", "Nitrogen", "Carbon Dioxide", "Hydrogen"], answer: "Carbon Dioxide" },
+                { id: 203, text: "What is the hardest natural substance on Earth?", options: ["Gold", "Iron", "Diamond", "Quartz"], answer: "Diamond" },
+                { id: 204, text: "How many bones are in the adult human body?", options: ["180", "206", "215", "250"], answer: "206" },
+                { id: 205, text: "Which organ is responsible for pumping blood?", options: ["Lungs", "Brain", "Heart", "Liver"], answer: "Heart" }
+            ] 
+        },
+        { 
+            id: 3, title: "Web Development", questions: [
+                { id: 301, text: "What does HTML stand for?", options: ["Hyper Text Markup Language", "Home Tool Markup Language", "Hyperlinks Text Management"], answer: "Hyper Text Markup Language" },
+                { id: 302, text: "Which language is used for styling web pages?", options: ["HTML", "Python", "CSS", "SQL"], answer: "CSS" },
+                { id: 303, text: "What is the default port for HTTP?", options: ["21", "80", "443", "8080"], answer: "80" },
+                { id: 304, text: "Which of these is a JavaScript framework?", options: ["React", "Django", "Laravel", "Flask"], answer: "React" },
+                { id: 305, text: "Inside which HTML element do we put JavaScript?", options: ["<js>", "<scripting>", "<script>", "<javascript>"], answer: "<script>" }
+            ] 
+        }
+    ];
+
+    let quizzes = JSON.parse(localStorage.getItem('quiz_v5')) || defaultQuizzes;
+    let scores = JSON.parse(localStorage.getItem('scores_v5')) || [];
+    let session = { user: '', quiz: null, index: 0, score: 0, active: true };
+
+    // --- AUTH ---
+    function login(role) {
+        const u = document.getElementById('username').value;
+        const p = document.getElementById('password').value;
+
+        if (role === 'admin' && u === 'admin' && p === 'admin123') {
+            session.user = "Admin User";
+            showPanel('admin');
+        } else if (role === 'student' && u === 'student' && p === 'pass123') {
+            session.user = "Student User";
+            showPanel('student');
+        } else {
+            alert("Credentials: admin/admin123 or student/pass123");
+        }
+    }
+
+    function showPanel(role) {
+        document.getElementById('login-view').classList.add('hidden');
+        document.getElementById('main-view').classList.remove('hidden');
+        document.getElementById('role-title').innerText = role === 'admin' ? "Admin: Performance & Content" : "Student: Start Learning";
+        
+        if (role === 'admin') {
+            document.getElementById('admin-panel').classList.remove('hidden');
+            renderAdminPanel();
+        } else {
+            document.getElementById('student-panel').classList.remove('hidden');
+            showStudentDashboard();
+        }
+    }
+
+    // --- ADMIN LOGIC ---
+    function renderAdminPanel() {
+        // Table
+        const tbody = document.getElementById('performance-body');
+        tbody.innerHTML = scores.length ? '' : '<tr><td colspan="5" style="text-align:center">No student attempts yet.</td></tr>';
+        
+        // Reverse to show latest first
+        [...scores].reverse().forEach(s => {
+            tbody.innerHTML += `<tr>
+                <td>${s.user}</td>
+                <td>${s.quiz}</td>
+                <td>${s.points} / ${s.total}</td>
+                <td><span style="background:#e0f2fe; color:#0369a1; padding:4px 8px; border-radius:5px; font-weight:bold">${s.percent}%</span></td>
+                <td style="font-size:0.8rem">${s.date}</td>
+            </tr>`;
+        });
+
+        // Quiz List
+        const list = document.getElementById('admin-quiz-list');
+        list.innerHTML = '<h3 style="margin-top:30px">Quiz Management</h3>';
+        quizzes.forEach(q => {
+            const div = document.createElement('div');
+            div.className = 'quiz-item';
+            div.innerHTML = `
+                <div class="flex-between">
+                    <strong>${q.title} (${q.questions.length} Qs)</strong>
+                    <div class="flex-row">
+                        <button class="btn-success" onclick="openModal(${q.id})">Add Q</button>
+                        <button class="btn-danger" onclick="deleteQuiz(${q.id})">Delete Quiz</button>
+                    </div>
+                </div>
+                <div style="margin-top:10px">
+                    ${q.questions.map(quest => `
+                        <div class="q-row">
+                            <span>${quest.text}</span>
+                            <span style="color:var(--success); font-weight:bold">✔ ${quest.answer}</span>
+                            <button style="background:none; color:red; padding:0" onclick="deleteQuestion(${q.id}, ${quest.id})">✖</button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            list.appendChild(div);
+        });
+        localStorage.setItem('quiz_v5', JSON.stringify(quizzes));
+    }
+
+    function addQuiz() {
+        const t = document.getElementById('new-quiz-title').value;
+        if (!t) return;
+        quizzes.push({ id: Date.now(), title: t, questions: [] });
+        document.getElementById('new-quiz-title').value = '';
+        renderAdminPanel();
+    }
+
+    function deleteQuiz(id) {
+        if(confirm("Delete this entire quiz?")) {
+            quizzes = quizzes.filter(q => q.id !== id);
+            renderAdminPanel();
+        }
+    }
+
+    // Modal
+    function openModal(id) {
+        document.getElementById('modal-quiz-id').value = id;
+        document.getElementById('modal').classList.remove('hidden');
+    }
+    function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+    
+    function syncAnsDropdown() {
+        const opts = document.getElementById('m-opts').value.split(',').map(s => s.trim()).filter(s => s !== '');
+        const select = document.getElementById('m-ans');
+        select.innerHTML = opts.map(o => `<option value="${o}">${o}</option>`).join('');
+    }
+
+    function saveQuestion() {
+        const qid = parseInt(document.getElementById('modal-quiz-id').value);
+        const text = document.getElementById('m-text').value;
+        const answer = document.getElementById('m-ans').value;
+        const options = document.getElementById('m-opts').value.split(',').map(s => s.trim());
+
+        if (!text || !answer || options.length < 2) return alert("Fill all fields!");
+
+        quizzes.find(q => q.id === qid).questions.push({ id: Date.now(), text, options, answer });
+        closeModal();
+        renderAdminPanel();
+    }
+
+    function deleteQuestion(qzId, qId) {
+        const qz = quizzes.find(q => q.id === qzId);
+        qz.questions = qz.questions.filter(q => q.id !== qId);
+        renderAdminPanel();
+    }
+
+    // --- STUDENT LOGIC ---
+    function showStudentDashboard() {
+        document.getElementById('student-quiz-list').classList.remove('hidden');
+        document.getElementById('quiz-arena').classList.add('hidden');
+        document.getElementById('quiz-result').classList.add('hidden');
+        
+        const list = document.getElementById('student-quiz-list');
+        list.innerHTML = '<h3>Available Quizzes</h3>';
+        quizzes.forEach(q => {
+            const div = document.createElement('div');
+            div.className = 'card flex-between';
+            div.innerHTML = `<div><strong>${q.title}</strong><br><small>${q.questions.length} Questions</small></div>
+                             <button class="btn-primary" onclick="startQuiz(${q.id})">Start Quiz</button>`;
+            list.appendChild(div);
+        });
+    }
+
+    function startQuiz(id) {
+        const qz = quizzes.find(q => q.id === id);
+        if (!qz.questions.length) return alert("This quiz has no questions yet!");
+        session = { user: "Student", quiz: qz, index: 0, score: 0, active: true };
+        document.getElementById('student-quiz-list').classList.add('hidden');
+        document.getElementById('quiz-arena').classList.remove('hidden');
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        session.active = true;
+        const q = session.quiz.questions[session.index];
+        document.getElementById('q-text').innerText = q.text;
+        document.getElementById('q-count').innerText = `Question ${session.index + 1} / ${session.quiz.questions.length}`;
+        document.getElementById('live-score').innerText = `Score: ${session.score}`;
+        document.getElementById('feedback').innerText = '';
+
+        const container = document.getElementById('options-container');
+        container.innerHTML = '';
+        q.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opt;
+            btn.onclick = () => validate(btn, opt);
+            container.appendChild(btn);
+        });
+    }
+
+    function validate(btn, selected) {
+        if (!session.active) return;
+        session.active = false;
+
+        const correct = session.quiz.questions[session.index].answer;
+        const fb = document.getElementById('feedback');
+
+        if (selected === correct) {
+            btn.classList.add('correct');
+            session.score++;
+            fb.innerHTML = '<span style="color:var(--success)">✨ Correct! Well done.</span>';
+        } else {
+            btn.classList.add('wrong');
+            fb.innerHTML = `<span style="color:var(--danger)">❌ Wrong! Correct answer: ${correct}</span>`;
+            // Highlight the right one
+            Array.from(document.querySelectorAll('.option-btn')).forEach(b => {
+                if (b.innerText === correct) b.classList.add('correct');
+            });
+        }
+
+        setTimeout(() => {
+            session.index++;
+            if (session.index < session.quiz.questions.length) loadQuestion();
+            else finishQuiz();
+        }, 1800);
+    }
+
+    function finishQuiz() {
+        document.getElementById('quiz-arena').classList.add('hidden');
+        document.getElementById('quiz-result').classList.remove('hidden');
+        
+        const percent = Math.round((session.score / session.quiz.questions.length) * 100);
+        document.getElementById('final-stats').innerText = `${session.score} / ${session.quiz.questions.length} (${percent}%)`;
+        
+        // Save to History
+        scores.push({
+            user: "Student",
+            quiz: session.quiz.title,
+            points: session.score,
+            total: session.quiz.questions.length,
+            percent: percent,
+            date: new Date().toLocaleString()
+        });
+        localStorage.setItem('scores_v5', JSON.stringify(scores));
+    }
+
+    function resetApp() {
+        if(confirm("Warning: This will wipe all scores and custom quizzes! Reset to defaults?")) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
+</script>
+</body>
+</html>
